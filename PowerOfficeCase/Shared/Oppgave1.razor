@@ -1,0 +1,88 @@
+﻿@inject IBrregDataService brregDataService
+@inject ILogger<Oppgave1> logger
+
+<div class="dropArea @dropClass">
+    Drag and drop a csv file, or click to select a file
+    <InputFile OnChange="OnInputFileChange"
+               @ondragenter="HandleDragEnter"
+               @ondragleave="HandleDragLeave" 
+               disabled="@loadingFile" 
+               accept=".csv"
+               title="Drag and drop csv"
+               style=" position: absolute;
+                        width: 100%;
+                        height: 100%;
+                        opacity: 0;
+                        cursor: pointer; " />
+
+</div>
+
+@if (loadingFile)
+{
+    <progress value="@index" max="@inputCsvOrgList.Count"></progress>
+}
+
+<Oppgave2 redraw=@loadingFile />
+
+@code
+{
+    private bool loadingFile = false;
+    private List<InputCsvOrg> inputCsvOrgList = new List<InputCsvOrg>();
+    private int index = 0;
+
+    string dropClass = string.Empty;
+    void HandleDragEnter()
+    {
+        dropClass = "dropAreaDrug";
+    }
+    void HandleDragLeave()
+    {
+        dropClass = string.Empty;
+    }
+
+    async Task OnInputFileChange(InputFileChangeEventArgs args)
+    {
+        loadingFile = true;
+        var brregEnhetList = new List<BrregEnhet>();
+        try
+        {
+            var buffer = new byte[args.File.Size];
+            await args.File.OpenReadStream().ReadAsync(buffer);
+            using var memoryStream = new MemoryStream(buffer);
+            using var streamReader = new StreamReader(memoryStream);
+            using var csvReader = new CsvReader(streamReader, new CsvConfiguration(CultureInfo.CurrentCulture) { Delimiter = ";" });
+
+            inputCsvOrgList = csvReader.GetRecords<InputCsvOrg>().ToList();
+
+            foreach (var org in inputCsvOrgList)
+            {
+                index++;
+                var brregEnhet = await brregDataService.GetEnhet(org);
+                if (brregEnhet.OrgNr is not null)
+                {
+                    brregEnhetList.Add(brregEnhet);
+                }
+                await InvokeAsync(StateHasChanged);
+            }
+
+
+            var filename = $"{Path.GetFileNameWithoutExtension(args.File.Name)}-{DateTime.Now.Ticks.ToString()}.csv";
+            Directory.CreateDirectory($"{Environment.CurrentDirectory}\\files");
+            var filepath = $"{Environment.CurrentDirectory}\\files\\{filename}";
+
+
+            using var streamWriter = new StreamWriter(filepath);
+            using var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture);
+            csvWriter.WriteRecords(brregEnhetList);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex.Message);
+        }
+
+        index = 0;
+        loadingFile = false;
+        dropClass = string.Empty;
+        await InvokeAsync(StateHasChanged);
+    }
+}

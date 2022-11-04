@@ -1,0 +1,37 @@
+﻿.flex-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.flex-container div{
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    width: 100%;
+}
+
+button {
+    border: 3px solid aquamarine;
+    background-color: aquamarine;
+    border-radius: 2rem;
+    padding: .7rem;
+    font-weight: 600;
+}
+
+    button:hover {
+        background-color: aliceblue;
+        border: 3px solid aquamarine;
+    }
+
+.deleteFile {
+    font-size: 2rem;
+    font-weight: 900;
+    color: red;
+    margin: 0;
+    cursor: pointer;
+}
+
+.deleteFile:hover {
+    transform: scale(1.4);
+}

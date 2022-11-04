@@ -1,0 +1,98 @@
+﻿@inject ILogger<Oppgave2> logger
+
+<div class="flex-container">
+    @foreach (var file in files)
+    {
+        <div>
+            <button @onclick="() => OnReadCsvFile(file)" title="Show data">@Path.GetFileName(file)</button>
+            <p @onclick="() => DeleteFile(file)" class="deleteFile" title="Delete File">X</p>
+        </div>
+    }
+</div>
+
+<MudBlazor.MudPaper Class="pa-4">
+    <MudBlazor.MudChart ChartType="MudBlazor.ChartType.Pie" InputData="@pieData.ToArray()" InputLabels="@labels" Width="400px"/>
+</MudBlazor.MudPaper>
+
+@code {
+    [Parameter]
+    public bool redraw { get; set; }
+    List<string> files = new List<string>();
+    List<BrregEnhet> brregEnhetList = new List<BrregEnhet>();
+    int dataSize = 4;
+    List<double>pieData = new List<double>();
+    string[] labels = { "ENK", "Annet", "AS 0-4", "AS 5-10", "AS>10" };
+
+    async Task ListFiles()
+    {
+        files.Clear();
+        files = Directory.GetFiles($"{Environment.CurrentDirectory}\\Files", "*.*").ToList();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    async Task OnReadCsvFile(string file)
+    {
+        try
+        {
+            using var streamReader = new StreamReader(file);
+            using var csvReader = new CsvReader(streamReader, CultureInfo.InvariantCulture);
+            brregEnhetList = csvReader.GetRecords<BrregEnhet>().ToList();
+
+            await CalculateData(brregEnhetList);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex.Message);
+        }
+    }
+
+    async Task CalculateData (List<BrregEnhet> list)
+    {
+        pieData.Clear();
+        var enkQuary = from enhet in brregEnhetList
+                       where enhet.OrgForm.Equals("ENK", StringComparison.OrdinalIgnoreCase)
+                       select enhet;
+        pieData.Add(enkQuary.Count());
+
+        var andreQuary = from enhet in brregEnhetList
+                         where !enhet.OrgForm.Equals("ENK", StringComparison.OrdinalIgnoreCase)
+                         && !enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
+                         select enhet;
+       pieData.Add(andreQuary.Count());
+
+        var asSmallQuary = from enhet in brregEnhetList
+                           where enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
+                           && Convert.ToInt32(enhet.AntallAnsatte) <= 4
+                           select enhet;
+        pieData.Add(asSmallQuary.Count());
+
+        var asMediumQuary = from enhet in brregEnhetList
+                           where enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
+                            && Convert.ToInt32(enhet.AntallAnsatte) >= 5 && Convert.ToInt32(enhet.AntallAnsatte) <= 10
+                           select enhet;
+        pieData.Add(asMediumQuary.Count());
+
+        var asLargeQuary = from enhet in brregEnhetList
+                           where enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
+                           && Convert.ToInt32(enhet.AntallAnsatte) > 10
+                           select enhet;
+        pieData.Add(asLargeQuary.Count());
+    }
+
+    async Task DeleteFile (string file)
+    {
+        File.Delete(file);
+        pieData.Clear();
+        await ListFiles();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await ListFiles();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ListFiles();
+    }
+}

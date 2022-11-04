@@ -1,0 +1,34 @@
+﻿.dropArea {
+    border: 2px dashed gray; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: lightgray;
+    font-size: 1.5rem;
+    cursor: pointer;
+    position: relative;
+    min-height: 150px;
+    margin-bottom: 1rem;
+}
+
+    .dropArea:hover {
+        background-color: darkgray;
+        color: #333;
+    }
+
+    .dropArea input[type=file] {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+.dropAreaDrug {
+    background-color: darkgray;
+}
+
+progress {
+    height: 20px;
+    width: 100%;
+}
