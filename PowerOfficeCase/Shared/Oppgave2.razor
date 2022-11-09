@@ -21,11 +21,12 @@
     List<BrregEnhet> brregEnhetList = new List<BrregEnhet>();
     int dataSize = 4;
     List<double>pieData = new List<double>();
-    string[] labels = { "ENK", "Annet", "AS 0-4", "AS 5-10", "AS>10" };
+    string[] labels = { "ENK", "Annet", "AS 0-4 Ansate", "AS 5-10 Ansate", "AS>10 Ansate" };
 
     async Task ListFiles()
     {
         files.Clear();
+        Directory.CreateDirectory($"{Environment.CurrentDirectory}\\files");
         files = Directory.GetFiles($"{Environment.CurrentDirectory}\\Files", "*.*").ToList();
         await InvokeAsync(StateHasChanged);
     }
