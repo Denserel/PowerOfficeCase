@@ -11,7 +11,7 @@
 </div>
 
 <MudBlazor.MudPaper Class="pa-4">
-    <MudBlazor.MudChart ChartType="MudBlazor.ChartType.Pie" InputData="@pieData.ToArray()" InputLabels="@labels" Width="400px"/>
+    <MudBlazor.MudChart ChartType="MudBlazor.ChartType.Pie" InputData="@pieData.ToArray()" InputLabels="@labels" Width="400px" />
 </MudBlazor.MudPaper>
 
 @code {
@@ -20,7 +20,7 @@
     List<string> files = new List<string>();
     List<BrregEnhet> brregEnhetList = new List<BrregEnhet>();
     int dataSize = 4;
-    List<double>pieData = new List<double>();
+    List<double> pieData = new List<double>();
     string[] labels = { "ENK", "Annet", "AS 0-4 Ansate", "AS 5-10 Ansate", "AS>10 Ansate" };
 
     async Task ListFiles()
@@ -47,40 +47,26 @@
         }
     }
 
-    async Task CalculateData (List<BrregEnhet> list)
+    async Task CalculateData(List<BrregEnhet> list)
     {
         pieData.Clear();
-        var enkQuary = from enhet in brregEnhetList
-                       where enhet.OrgForm.Equals("ENK", StringComparison.OrdinalIgnoreCase)
-                       select enhet;
-        pieData.Add(enkQuary.Count());
 
-        var andreQuary = from enhet in brregEnhetList
-                         where !enhet.OrgForm.Equals("ENK", StringComparison.OrdinalIgnoreCase)
-                         && !enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
-                         select enhet;
-       pieData.Add(andreQuary.Count());
+        pieData.Add(brregEnhetList.Count(enhet => enhet.OrgForm.Equals("ENK", StringComparison.OrdinalIgnoreCase)));
 
-        var asSmallQuary = from enhet in brregEnhetList
-                           where enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
-                           && Convert.ToInt32(enhet.AntallAnsatte) <= 4
-                           select enhet;
-        pieData.Add(asSmallQuary.Count());
+        pieData.Add(brregEnhetList.Count(enhet => !enhet.OrgForm.Equals("ENK", StringComparison.OrdinalIgnoreCase)
+                       && !enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)));
 
-        var asMediumQuary = from enhet in brregEnhetList
-                           where enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
-                            && Convert.ToInt32(enhet.AntallAnsatte) >= 5 && Convert.ToInt32(enhet.AntallAnsatte) <= 10
-                           select enhet;
-        pieData.Add(asMediumQuary.Count());
+        pieData.Add(brregEnhetList.Count(enhet => enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
+                           && Convert.ToInt32(enhet.AntallAnsatte) <= 4));
 
-        var asLargeQuary = from enhet in brregEnhetList
-                           where enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
-                           && Convert.ToInt32(enhet.AntallAnsatte) > 10
-                           select enhet;
-        pieData.Add(asLargeQuary.Count());
+        pieData.Add(brregEnhetList.Count(enhet => enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
+                             && Convert.ToInt32(enhet.AntallAnsatte) >= 5 && Convert.ToInt32(enhet.AntallAnsatte) <= 10));
+
+        pieData.Add(brregEnhetList.Count(enhet => enhet.OrgForm.Equals("AS", StringComparison.OrdinalIgnoreCase)
+                           && Convert.ToInt32(enhet.AntallAnsatte) > 10));
     }
 
-    async Task DeleteFile (string file)
+    async Task DeleteFile(string file)
     {
         File.Delete(file);
         pieData.Clear();
