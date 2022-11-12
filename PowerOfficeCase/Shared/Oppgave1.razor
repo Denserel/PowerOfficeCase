@@ -1,12 +1,14 @@
-﻿@inject IBrregDataService brregDataService
+﻿@using System.IO.Pipelines;
+@inject IBrregDataService brregDataService
 @inject ILogger<Oppgave1> logger
+
 
 <div class="dropArea @dropClass">
     Drag and drop a csv file, or click to select a file
     <InputFile OnChange="OnInputFileChange"
                @ondragenter="HandleDragEnter"
-               @ondragleave="HandleDragLeave" 
-               disabled="@loadingFile" 
+               @ondragleave="HandleDragLeave"
+               disabled="@loadingFile"
                accept=".csv"
                title="Drag and drop csv"
                style=" position: absolute;
@@ -46,13 +48,9 @@
         var brregEnhetList = new List<BrregEnhet>();
         try
         {
-            var buffer = new byte[args.File.Size];
-            await args.File.OpenReadStream().ReadAsync(buffer);
-            using var memoryStream = new MemoryStream(buffer);
-            using var streamReader = new StreamReader(memoryStream);
-            using var csvReader = new CsvReader(streamReader, new CsvConfiguration(CultureInfo.CurrentCulture) { Delimiter = ";" });
+            using var csvReader = new CsvReader(new StreamReader(args.File.OpenReadStream()), new CsvConfiguration(CultureInfo.CurrentCulture) { Delimiter = ";" });
 
-            inputCsvOrgList = csvReader.GetRecords<InputCsvOrg>().ToList();
+            inputCsvOrgList = await csvReader.GetRecordsAsync<InputCsvOrg>().ToListAsync();
 
             foreach (var org in inputCsvOrgList)
             {
@@ -69,7 +67,7 @@
             var filename = $"{Path.GetFileNameWithoutExtension(args.File.Name)}-{DateTime.Now.Ticks.ToString()}.csv";
             Directory.CreateDirectory($"{Environment.CurrentDirectory}\\files");
             var filepath = $"{Environment.CurrentDirectory}\\files\\{filename}";
-            
+
 
             using var streamWriter = new StreamWriter(filepath);
             using var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture);
@@ -84,5 +82,5 @@
         loadingFile = false;
         dropClass = string.Empty;
         await InvokeAsync(StateHasChanged);
-    }
+}
 }
