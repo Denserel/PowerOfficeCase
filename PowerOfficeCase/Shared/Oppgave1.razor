@@ -21,7 +21,7 @@
 
 @if (loadingFile)
 {
-    <progress value="@index" max="@inputCsvOrgList.Count"></progress>
+    <progress value="@index" max="@size"></progress>
 }
 
 <Oppgave2 redraw=@loadingFile />
@@ -29,8 +29,8 @@
 @code
 {
     private bool loadingFile = false;
-    private List<InputCsvOrg> inputCsvOrgList = new List<InputCsvOrg>();
-    private int index = 0;
+    private long index;
+    private long size;
 
     string dropClass = string.Empty;
     void HandleDragEnter()
@@ -44,34 +44,35 @@
 
     async Task OnInputFileChange(InputFileChangeEventArgs args)
     {
-        loadingFile = true;
+        var tasks = new List<Task<BrregEnhet>>();
         var brregEnhetList = new List<BrregEnhet>();
+        var inputCsvOrgList = new List<InputCsvOrg>();
+        loadingFile = true;
+
         try
         {
-            using var csvReader = new CsvReader(new StreamReader(args.File.OpenReadStream()), new CsvConfiguration(CultureInfo.CurrentCulture) { Delimiter = ";" });
+            using var csvReader = new CsvReader(new StreamReader(args.File.OpenReadStream()), new CsvConfiguration(CultureInfo.CurrentCulture) { Delimiter = ";", CountBytes = true });
 
             inputCsvOrgList = await csvReader.GetRecordsAsync<InputCsvOrg>().ToListAsync();
 
-            foreach (var org in inputCsvOrgList)
+            inputCsvOrgList.ForEach(org => tasks.Add(Task.Run(async () => await brregDataService.GetEnhet(org))));
+           
+            var brregServiceTaskList = Task.WhenAll(tasks);
+
+            brregServiceTaskList.Wait();
+
+            if (brregServiceTaskList.IsCompletedSuccessfully)
             {
-                index++;
-                var brregEnhet = await brregDataService.GetEnhet(org);
-                if (brregEnhet.OrgNr is not null)
-                {
-                    brregEnhetList.Add(brregEnhet);
-                }
-                await InvokeAsync(StateHasChanged);
+                brregServiceTaskList.Result.ToList().ForEach(enhet => brregEnhetList.Add(enhet));
+
+                var filename = $"{Path.GetFileNameWithoutExtension(args.File.Name)}-{DateTime.Now.Ticks.ToString()}.csv";
+                Directory.CreateDirectory($"{Environment.CurrentDirectory}\\files");
+                var filepath = $"{Environment.CurrentDirectory}\\files\\{filename}";
+
+                using var streamWriter = new StreamWriter(filepath);
+                using var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture);
+                await csvWriter.WriteRecordsAsync(brregEnhetList);
             }
-
-
-            var filename = $"{Path.GetFileNameWithoutExtension(args.File.Name)}-{DateTime.Now.Ticks.ToString()}.csv";
-            Directory.CreateDirectory($"{Environment.CurrentDirectory}\\files");
-            var filepath = $"{Environment.CurrentDirectory}\\files\\{filename}";
-
-
-            using var streamWriter = new StreamWriter(filepath);
-            using var csvWriter = new CsvWriter(streamWriter, CultureInfo.InvariantCulture);
-            csvWriter.WriteRecords(brregEnhetList);
         }
         catch (Exception ex)
         {
@@ -82,5 +83,5 @@
         loadingFile = false;
         dropClass = string.Empty;
         await InvokeAsync(StateHasChanged);
-}
+    }
 }
