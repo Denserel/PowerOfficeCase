@@ -1,0 +1,28 @@
+﻿@inherits TestContext
+
+
+@code {
+    [Fact]
+    public void Oppgave1ComponentRendersCorrectly()
+    {
+        Services.AddScoped<IBrregDataService, BrregDataService>();
+
+        // Act
+        var cut = RenderComponent<Oppgave1>();
+
+        // Assert
+        cut.MarkupMatches(
+    @<text>
+    <div class="dropArea">
+        Drag and drop a csv file, or click to select a file
+        <input accept=".csv" title="Drag and drop csv" style=" position: absolute;
+                        width: 100%;
+                        height: 100%;
+                        opacity: 0;
+                        cursor: pointer; " type="file">
+    </div>
+    <Oppgave2 />
+    </text>
+        );
+    }
+}

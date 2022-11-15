@@ -21,7 +21,8 @@
 
 @if (loadingFile)
 {
-    <progress value="@index" max="@size"></progress>
+    @*<progress value="@index" max="@size"></progress>*@
+    <p>Prossecing your file ...</p>
 }
 
 <Oppgave2 redraw=@loadingFile />
@@ -29,8 +30,8 @@
 @code
 {
     private bool loadingFile = false;
-    private long index;
-    private long size;
+    private int index;
+    private int size;
 
     string dropClass = string.Empty;
     void HandleDragEnter()
@@ -51,12 +52,12 @@
 
         try
         {
-            using var csvReader = new CsvReader(new StreamReader(args.File.OpenReadStream()), new CsvConfiguration(CultureInfo.CurrentCulture) { Delimiter = ";", CountBytes = true });
+            using var csvReader = new CsvReader(new StreamReader(args.File.OpenReadStream()), new CsvConfiguration(CultureInfo.CurrentCulture) { Delimiter = ";"/*, CountBytes = true*/ });
 
             inputCsvOrgList = await csvReader.GetRecordsAsync<InputCsvOrg>().ToListAsync();
 
             inputCsvOrgList.ForEach(org => tasks.Add(Task.Run(async () => await brregDataService.GetEnhet(org))));
-           
+
             var brregServiceTaskList = Task.WhenAll(tasks);
 
             brregServiceTaskList.Wait();
